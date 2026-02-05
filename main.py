@@ -1,6 +1,4 @@
-# DELETE broken main.py → Create working honeypot
-@"
-from fastapi import FastAPI, HTTPException, Header, Body, Depends
+﻿from fastapi import FastAPI, HTTPException, Header, Body, Depends
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 
@@ -54,11 +52,3 @@ async def webhook(request: Request = Body(...), api_key: str = Depends(verify_ke
 if __name__ == '__main__':
     import uvicorn
     uvicorn.run(app, host='0.0.0.0', port=8000)
-"@ | Out-File main.py -Encoding utf8
-
-# FIXED requirements.txt (NO audio deps)
-@"
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-pydantic==2.9.2
-"@ | Out-File requirements.txt -Encoding utf8
