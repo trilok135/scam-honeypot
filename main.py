@@ -2,6 +2,7 @@
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 import re
+import random
 
 app = FastAPI()
 
@@ -27,35 +28,48 @@ def verify_key(x_api_key: str = Header(None)):
     if x_api_key != API_KEY:
         raise HTTPException(401, 'Invalid key')
 
-def get_smart_reply(scammer_text: str, turn: int) -> str:
+def get_risk_manager_reply(scammer_text: str, turn: int) -> str:
     text_lower = scammer_text.lower()
     
-    # PRIORITY 1: Direct response to scammer's request
+    # HIGH RISK - EVASIVE RESPONSES (Never shares details)
     if any(word in text_lower for word in ['account', 'ac', 'number']):
-        return "Okay sir, my account number is 1234567890123456. What's yours for verification?"
+        return random.choice([
+            "I don't share account details over SMS. Please call SBI customer care.",
+            "Bank never asks for account numbers via SMS as per RBI guidelines.",
+            "This seems like a phishing attempt. I'll report to cybercrime portal."
+        ])
     
     if any(word in text_lower for word in ['otp', 'one time', 'code']):
-        return "Got the OTP sir. It's 258391. What should I do next?"
+        return random.choice([
+            "SBI never asks for OTP via SMS. This violates RBI security policy.",
+            "Never share OTP with anyone. Forwarding this to SBI fraud team.",
+            "RBI mandated - OTPs are never requested through unsolicited messages."
+        ])
     
-    if any(word in text_lower for word in ['gpay', 'phonepe', 'upi', 'payment']):
-        return "My GPay ID is deepak.work@oksbi. Please share yours for verification."
+    if any(word in text_lower for word in ['gpay', 'upi', 'phonepe']):
+        return random.choice([
+            "Legitimate banks don't ask for UPI IDs via SMS. Please verify.",
+            "NPCI guidelines prohibit UPI sharing through unknown numbers.",
+            "This UPI request looks suspicious. Checking with SBI branch."
+        ])
     
     if 'link' in text_lower or 'http' in text_lower:
-        return "Clicked the link sir. What are the next steps?"
+        return random.choice([
+            "I never click unknown links. Please provide official SBI link.",
+            "Phishing links detected. Reporting to CERT-In immediately.",
+            "SBI verification never uses third-party links per policy."
+        ])
     
-    if any(word in text_lower for word in ['blocked', 'locked', 'suspend', 'frozen']):
-        return "My account got locked? How do I unlock it sir?"
-    
-    # PRIORITY 2: Professional fallback sequence
-    replies = [
-        "Good evening sir. What's the issue with my SBI account?",
-        "I'm an SBI Egmore customer. Is there an account problem?",
-        "Please share your account details. We can do mutual verification.",
-        "Share your payment ID for verification please.",
-        "Please send the verification link. I'll check it immediately."
+    # RISK MANAGER FALLBACK - Always suspicious
+    risk_replies = [
+        "This message format doesn't match SBI official communication.",
+        "SBI customer care number is 1800-11-2211. Why this number?",
+        "Urgent account issues are handled through official SBI app only.",
+        "Multiple red flags detected. Escalating to SBI security team.",
+        "RBI banned such communication methods. Please identify yourself."
     ]
     
-    return replies[turn % 5]
+    return random.choice(risk_replies)
 
 @app.get('/health')
 async def health():
@@ -67,13 +81,16 @@ async def webhook(request: Request = Body(...), api_key: str = Depends(verify_ke
     text = request.message.text
     
     if sid not in sessions:
-        sessions[sid] = {'turns': 0}
+        sessions[sid] = {'turns': 0, 'risk_score': 0}
     
     sessions[sid]['turns'] += 1
-    reply = get_smart_reply(text, sessions[sid]['turns'])
+    sessions[sid]['risk_score'] += 1  # Every message increases suspicion
+    
+    reply = get_risk_manager_reply(text, sessions[sid]['turns'])
     
     print(f"Scammer: {text}")
-    print(f"Honeypot: {reply}")
+    print(f"Risk Manager: {reply}")
+    print(f"Risk Score: {sessions[sid]['risk_score']}")
     print("---")
     
     return Response(status='success', reply=reply)
