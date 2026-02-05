@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict
 import re
 
-app = FastAPI(title="Enterprise Scam Honeypot")
+app = FastAPI()
 
 class Message(BaseModel):
     sender: str
@@ -27,21 +27,35 @@ def verify_key(x_api_key: str = Header(None)):
     if x_api_key != API_KEY:
         raise HTTPException(401, 'Invalid key')
 
-def extract_intel(text: str):
-    intel = {}
-    # UPI extraction
-    upi = re.findall(r'[@](\\w+)', text)
-    if upi: intel['upi'] = upi
+def get_smart_reply(scammer_text: str, turn: int) -> str:
+    text_lower = scammer_text.lower()
     
-    # Account numbers
-    ac = re.findall(r'\\b\\d{10,18}\\b', text)
-    if ac: intel['accounts'] = ac
+    # PRIORITY 1: Direct response to scammer's request
+    if any(word in text_lower for word in ['account', 'ac', 'number']):
+        return "Okay sir, my account number is 1234567890123456. What's yours for verification?"
     
-    # Links
-    links = re.findall(r'https?://[^\\s]+', text)
-    if links: intel['links'] = links
+    if any(word in text_lower for word in ['otp', 'one time', 'code']):
+        return "Got the OTP sir. It's 258391. What should I do next?"
     
-    return intel
+    if any(word in text_lower for word in ['gpay', 'phonepe', 'upi', 'payment']):
+        return "My GPay ID is deepak.work@oksbi. Please share yours for verification."
+    
+    if 'link' in text_lower or 'http' in text_lower:
+        return "Clicked the link sir. What are the next steps?"
+    
+    if any(word in text_lower for word in ['blocked', 'locked', 'suspend', 'frozen']):
+        return "My account got locked? How do I unlock it sir?"
+    
+    # PRIORITY 2: Professional fallback sequence
+    replies = [
+        "Good evening sir. What's the issue with my SBI account?",
+        "I'm an SBI Egmore customer. Is there an account problem?",
+        "Please share your account details. We can do mutual verification.",
+        "Share your payment ID for verification please.",
+        "Please send the verification link. I'll check it immediately."
+    ]
+    
+    return replies[turn % 5]
 
 @app.get('/health')
 async def health():
@@ -53,30 +67,14 @@ async def webhook(request: Request = Body(...), api_key: str = Depends(verify_ke
     text = request.message.text
     
     if sid not in sessions:
-        sessions[sid] = {'turns': 0, 'intel': {}}
+        sessions[sid] = {'turns': 0}
     
     sessions[sid]['turns'] += 1
-    intel = extract_intel(text)
-    if intel: sessions[sid]['intel'].update(intel)
+    reply = get_smart_reply(text, sessions[sid]['turns'])
     
-    # PROFESSIONAL RESPONSES - Government/Business scams
-    replies = [
-        "Income Tax Department here. Please provide PAN number for verification.",
-        "RBI Compliance Officer. Share your registered mobile number for OTP.",
-        "UIDAI Aadhaar Helpdesk. Confirm your Aadhaar number ending with XXXX.",
-        "EPFO Regional Office. Provide your UAN and last 4 digits of Aadhaar.",
-        "IRDAI Insurance Authority. Submit policy number for claim processing.",
-        "MCA Corporate Affairs. Company CIN number required for ROC compliance.",
-        "PF Commissioner Office. UAN and bank account for PF settlement.",
-        "GSTN Portal Admin. GSTIN number needed for input tax credit verification.",
-        "SEBI Investor Protection. Demat account number for KYC updation.",
-        "NPCI UPI Security. Virtual payment address required for transaction reversal."
-    ]
-    
-    reply_idx = (sessions[sid]['turns'] - 1) % len(replies)
-    reply = replies[reply_idx]
-    
-    print(f"Session {sid}: Turn {sessions[sid]['turns']} - Intel: {intel}")
+    print(f"Scammer: {text}")
+    print(f"Honeypot: {reply}")
+    print("---")
     
     return Response(status='success', reply=reply)
 
