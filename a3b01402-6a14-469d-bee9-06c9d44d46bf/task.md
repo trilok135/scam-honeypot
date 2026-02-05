@@ -1,0 +1,13 @@
+# Scam Detection & Honeypot System
+
+- [/] Project Initialization <!-- id: 0 -->
+    - [x] Create project directory `scamsafe_bot` <!-- id: 1 -->
+    - [x] Set up virtual environment and `requirements.txt` <!-- id: 2 -->
+- [/] Core Logic Implementation <!-- id: 3 -->
+    - [x] Create `prompts.py` to store the System Foundation and Persona prompts <!-- id: 4 -->
+    - [x] Implement `detector.py` (Phase 1: Regex + LLM Classifier) <!-- id: 5 -->
+    - [x] Implement `persona.py` (Phase 2: Deepak Sharma Logic) <!-- id: 6 -->
+    - [x] Implement `session_manager.py` (State tracking & JSON logging) <!-- id: 7 -->
+- [x] Interface & Verification <!-- id: 8 -->
+    - [x] Create `main.py` CLI for interacting with the system <!-- id: 9 -->
+    - [x] Run verification tests with simulated scam messages <!-- id: 10 -->

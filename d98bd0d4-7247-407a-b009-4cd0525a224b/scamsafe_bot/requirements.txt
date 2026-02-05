@@ -1,0 +1,8 @@
+
+crewai
+crewai-tools
+anthropic
+fastapi
+uvicorn
+requests
+regex

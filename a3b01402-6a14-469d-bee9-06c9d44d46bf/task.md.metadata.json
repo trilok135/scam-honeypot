@@ -1,0 +1,5 @@
+{
+  "artifactType": "ARTIFACT_TYPE_TASK",
+  "summary": "Task list for building the Scam Detection & Honeypot Extraction System.\nIncludes:\n- Project scaffolding\n- Prompt template management\n- Core logic implementation (Detection & Persona)\n- Testing harness",
+  "updatedAt": "2026-02-04T16:10:48.579205Z"
+}
